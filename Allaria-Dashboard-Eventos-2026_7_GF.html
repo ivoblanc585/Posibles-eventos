@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Allaria — Dashboard Federal de Eventos · May 2026 – May 2027</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root {
+    /* Paleta institucional Allaria (Manual de Marca) */
+    --allaria-navy: #003366;        /* Pantone 288 C */
+    --allaria-navy-700: #00264d;    /* sombra del navy */
+    --allaria-navy-300: #3c6ea0;    /* tint azul secundario */
+    --allaria-navy-100: #d9e2ec;    /* azul claro tint */
+    --allaria-gold: #8B734B;        /* Pantone 872 C */
+    --allaria-gold-700: #6f5c3c;
+    --allaria-gold-100: #e8dfd0;
+    --allaria-black: #1D1D1B;       /* Pantone Process Black U */
+    --allaria-gray-900: #3a3a38;
+    --allaria-gray-600: #6b6b68;
+    --allaria-gray-400: #a7a7a3;
+    --allaria-gray-200: #e4e4e0;
+    --allaria-gray-100: #f2f1ee;
+    --allaria-white: #ffffff;
+
+    /* Roles semánticos */
+    --bg-page: #f7f7f4;
+    --bg-surface: #ffffff;
+    --bg-alt: #f2f1ee;
+    --bg-navy: var(--allaria-navy);
+    --border: #e4e4e0;
+    --border-strong: #cfcfc9;
+    --text-primary: var(--allaria-black);
+    --text-secondary: var(--allaria-gray-600);
+    --text-muted: var(--allaria-gray-400);
+    --text-on-navy: #ffffff;
+
+    /* Categorías sectoriales (tonos extraídos de la paleta extendida del manual) */
+    --sector-agro: #5d7a3a;
+    --sector-mineria: var(--allaria-gold);
+    --sector-energia: #a8432f;
+    --sector-finanzas: var(--allaria-navy);
+    --sector-realestate: #4a3c6b;
+    --sector-turismo: #a8594b;
+
+    /* Fit */
+    --fit-high: #1f5a3d;
+    --fit-med: var(--allaria-gold);
+    --fit-low: var(--allaria-gray-600);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  body {
+    background: var(--bg-page);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 400;
+    min-height: 100vh;
+  }
+
+  /* ======= HEADER navy institucional ======= */
+  header.site {
+    background: var(--allaria-navy);
+    color: var(--text-on-navy);
+    padding: 28px 40px 26px;
+    position: relative;
+  }
+  header.site::after {
+    content: '';
+    position: absolute;
+    left: 40px; bottom: 14px;
+    width: 72px; height: 3px;
+    background: var(--allaria-gold);
+  }
+  .header-row {
+    max-width: 1600px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 24px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 18px;
+  }
+  .brand-mark {
+    width: 56px; height: 56px; flex-shrink: 0;
+    background: var(--allaria-navy);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Stylized mark — evoca las líneas del logo Allaria sin reproducirlo */
+  .brand-mark svg { width: 100%; height: 100%; display: block; }
+  .brand-text h1 {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 300; font-size: 24px; letter-spacing: -0.3px;
+    line-height: 1.2;
+  }
+  .brand-text h1 strong { font-weight: 700; }
+  .brand-text p {
+    font-size: 12px; font-weight: 400;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 0.2px; margin-top: 4px;
+  }
+  .meta {
+    display: flex; gap: 32px; flex-wrap: wrap;
+  }
+  .meta-item { text-align: right; }
+  .meta-item .n {
+    font-size: 26px; font-weight: 700; line-height: 1;
+    color: #ffffff;
+  }
+  .meta-item .n.gold { color: var(--allaria-gold-100); }
+  .meta-item .l {
+    font-size: 10.5px; color: rgba(255,255,255,0.65);
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin-top: 6px; font-weight: 500;
+  }
+
+  .container { padding: 28px 40px; max-width: 1600px; margin: 0 auto; }
+
+  /* ======= Filtros ======= */
+  .filters {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px 22px;
+    margin-bottom: 22px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 16px;
+    align-items: end;
+  }
+  .filter label {
+    display: block;
+    font-size: 10.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.1px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+  .filter select, .filter input {
+    width: 100%;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: 'Open Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .filter select:focus, .filter input:focus {
+    border-color: var(--allaria-navy);
+    box-shadow: 0 0 0 3px rgba(0,51,102,0.08);
+  }
+  .btn-reset {
+    background: var(--allaria-navy);
+    color: #fff;
+    border: 1px solid var(--allaria-navy);
+    border-radius: 3px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 12px; font-weight: 600;
+    font-family: 'Open Sans', sans-serif;
+    letter-spacing: 0.4px;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .btn-reset:hover { background: var(--allaria-navy-700); }
+
+  /* ======= Grid principal ======= */
+  .grid-main {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 22px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 1100px) { .grid-main { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg-surface);
+  }
+  .panel-header h2 {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 600; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--allaria-navy);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .panel-header h2::before {
+    content: ''; width: 20px; height: 2px; background: var(--allaria-gold);
+  }
+  .panel-header .hint { font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
+
+  /* ======= Mapa ======= */
+  #map { height: 580px; width: 100%; background: var(--allaria-gray-100); }
+  .leaflet-container { background: var(--allaria-gray-100) !important; font-family: 'Open Sans', sans-serif !important; }
+  .leaflet-popup-content-wrapper {
+    background: var(--allaria-navy);
+    color: var(--text-on-navy);
+    border-radius: 4px;
+    border: 1px solid var(--allaria-navy-700);
+    box-shadow: 0 8px 24px rgba(0,38,77,0.25);
+  }
+  .leaflet-popup-tip { background: var(--allaria-navy); }
+  .leaflet-popup-content { margin: 14px 16px; font-size: 12.5px; line-height: 1.55; }
+  .leaflet-popup-content strong {
+    color: var(--allaria-gold-100);
+    display: block; margin-bottom: 5px;
+    font-size: 14px; font-weight: 700;
+  }
+  .leaflet-control-attribution {
+    background: rgba(255,255,255,0.8) !important;
+    color: var(--text-secondary) !important;
+    font-family: 'Open Sans', sans-serif !important;
+    font-size: 10px !important;
+  }
+
+  /* ======= Lista de eventos ======= */
+  .event-list {
+    max-height: 580px;
+    overflow-y: auto;
+    padding: 8px 10px;
+    background: var(--bg-alt);
+  }
+  .event-list::-webkit-scrollbar { width: 8px; }
+  .event-list::-webkit-scrollbar-track { background: var(--bg-alt); }
+  .event-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+  .event-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--allaria-navy-300);
+    border-radius: 3px;
+    padding: 13px 16px;
+    margin: 8px 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .event-card:hover {
+    border-left-color: var(--allaria-gold);
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(0,38,77,0.08);
+  }
+  .event-card.active {
+    border-left-color: var(--allaria-gold);
+    border-left-width: 4px;
+    background: #fdfcf9;
+    box-shadow: 0 2px 12px rgba(139,115,75,0.15);
+  }
+  .event-card-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 10px; margin-bottom: 8px;
+  }
+  .event-card-name {
+    font-size: 14px; font-weight: 600; color: var(--allaria-navy);
+    flex: 1; line-height: 1.35;
+  }
+  .event-card-date {
+    font-size: 11px; color: var(--text-secondary);
+    white-space: nowrap; font-weight: 500;
+    background: var(--allaria-gray-100);
+    padding: 3px 8px; border-radius: 3px;
+  }
+  .event-card-meta {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-size: 12px; color: var(--text-secondary);
+  }
+  .event-card-meta .dot { width: 3px; height: 3px; background: var(--text-muted); border-radius: 50%; }
+
+  /* ======= Tags y badges ======= */
+  .sector-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px; border-radius: 99px;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    background: var(--allaria-gray-100);
+    color: var(--text-primary);
+  }
+  .sector-tag::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+  }
+  .sector-tag.sector-agro::before { background: var(--sector-agro); }
+  .sector-tag.sector-mineria::before { background: var(--sector-mineria); }
+  .sector-tag.sector-energia::before { background: var(--sector-energia); }
+  .sector-tag.sector-finanzas::before { background: var(--sector-finanzas); }
+  .sector-tag.sector-realestate::before { background: var(--sector-realestate); }
+  .sector-tag.sector-turismo::before { background: var(--sector-turismo); }
+
+  .fit-badge {
+    font-size: 9.5px; font-weight: 700;
+    padding: 3px 9px; border-radius: 2px;
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .fit-high { background: rgba(31,90,61,0.12); color: var(--fit-high); }
+  .fit-med  { background: rgba(139,115,75,0.15); color: var(--fit-med); }
+  .fit-low  { background: var(--allaria-gray-100); color: var(--text-secondary); }
+
+  /* ======= Detail ======= */
+  .detail {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .detail-empty {
+    padding: 72px 40px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .detail-empty .icon {
+    width: 48px; height: 48px;
+    background: var(--allaria-gold);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+    color: #fff; font-size: 22px; font-weight: 300;
+  }
+
+  .detail-head {
+    border-bottom: 1px solid var(--border);
+    padding: 22px 28px 20px;
+    background: var(--allaria-navy);
+    color: var(--text-on-navy);
+    position: relative;
+  }
+  .detail-head::after {
+    content: ''; position: absolute;
+    left: 28px; bottom: 12px;
+    width: 48px; height: 2px;
+    background: var(--allaria-gold);
+  }
+  .detail-title {
+    font-size: 22px; font-weight: 700;
+    margin-bottom: 10px; letter-spacing: -0.2px;
+  }
+  .detail-subtitle {
+    font-size: 13px; display: flex; gap: 16px; flex-wrap: wrap;
+    color: rgba(255,255,255,0.85);
+    padding-bottom: 10px;
+  }
+  .detail-subtitle span { display: flex; align-items: center; gap: 6px; }
+  .detail-subtitle .sector-tag { background: rgba(255,255,255,0.14); color: #fff; }
+  .detail-subtitle .fit-badge.fit-high { background: rgba(255,255,255,0.2); color: #b8dbc8; }
+  .detail-subtitle .fit-badge.fit-med  { background: rgba(255,255,255,0.2); color: var(--allaria-gold-100); }
+  .detail-subtitle .fit-badge.fit-low  { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+
+  .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px 28px;
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    background: var(--bg-alt);
+  }
+  .detail-grid .k {
+    color: var(--text-secondary);
+    font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 1.1px; margin-bottom: 4px; font-weight: 600;
+  }
+  .detail-grid .v { color: var(--text-primary); font-weight: 500; }
+  .detail-grid .v a { color: var(--allaria-navy); text-decoration: none; border-bottom: 1px solid var(--allaria-gold); }
+  .detail-grid .v a:hover { color: var(--allaria-gold); }
+
+  .section { padding: 22px 28px; border-bottom: 1px solid var(--border); }
+  .section:last-child { border-bottom: none; }
+  .section h3 {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1.4px; color: var(--allaria-navy);
+    font-weight: 700; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section h3::before {
+    content: ''; width: 18px; height: 2px; background: var(--allaria-gold);
+  }
+  .section p { color: var(--text-primary); font-size: 14px; line-height: 1.7; }
+
+  .fit-list { display: flex; flex-direction: column; gap: 10px; }
+  .fit-item {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 12px 14px;
+    background: var(--bg-alt);
+    border-left: 3px solid var(--allaria-gold);
+    border-radius: 2px;
+  }
+  .fit-unit {
+    font-weight: 700; color: var(--allaria-navy);
+    font-size: 12.5px; min-width: 100px;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    padding-top: 2px;
+  }
+  .fit-desc { color: var(--text-primary); font-size: 13.5px; line-height: 1.6; flex: 1; }
+
+  .comp-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px;
+  }
+  .comp-chip {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 8px 12px;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-primary);
+    text-align: center;
+  }
+
+  .talk-track {
+    background: var(--allaria-navy);
+    color: #fff;
+    border-radius: 3px;
+    padding: 18px 22px;
+    font-size: 14px; line-height: 1.65;
+    font-weight: 400;
+    position: relative;
+    font-style: italic;
+  }
+  .talk-track::before {
+    content: '"';
+    position: absolute; top: 2px; left: 12px;
+    font-size: 46px; line-height: 1;
+    color: var(--allaria-gold);
+    font-family: Georgia, serif;
+    font-style: normal;
+  }
+  .talk-track { padding-left: 38px; }
+
+  .contact-list { display: flex; flex-direction: column; gap: 6px; }
+  .contact-item {
+    background: var(--bg-alt);
+    padding: 10px 14px; border-radius: 2px;
+    border-left: 2px solid var(--allaria-navy-300);
+    font-size: 13px; color: var(--text-primary);
+  }
+  .contact-item strong { color: var(--allaria-navy); font-weight: 700; }
+
+  /* ======= Matriz ======= */
+  .matrix-section { margin-top: 22px; }
+  table.matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-family: 'Open Sans', sans-serif;
+  }
+  table.matrix th, table.matrix td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  table.matrix thead th {
+    background: var(--allaria-navy);
+    color: #fff;
+    font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 1.1px; font-weight: 600;
+    position: sticky; top: 0; z-index: 1;
+    border-bottom: 2px solid var(--allaria-gold);
+  }
+  table.matrix tbody tr { transition: background 0.12s; }
+  table.matrix tbody tr:hover { background: var(--bg-alt); cursor: pointer; }
+  table.matrix tbody td strong { color: var(--allaria-navy); font-weight: 600; }
+
+  /* ======= Footer ======= */
+  footer.site {
+    padding: 24px 40px;
+    border-top: 3px solid var(--allaria-gold);
+    background: var(--allaria-navy);
+    color: rgba(255,255,255,0.75);
+    font-size: 12px;
+    text-align: center;
+  }
+  footer.site strong { color: #fff; font-weight: 600; }
+
+  /* ======= Legend en mapa ======= */
+  .legend {
+    position: absolute; bottom: 18px; right: 18px; z-index: 500;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--allaria-gold);
+    border-radius: 3px;
+    padding: 12px 14px;
+    font-size: 11.5px;
+    box-shadow: 0 4px 14px rgba(0,38,77,0.08);
+  }
+  .legend h4 {
+    font-size: 10px; color: var(--allaria-navy);
+    text-transform: uppercase; letter-spacing: 1.1px;
+    margin-bottom: 8px; font-weight: 700;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 9px;
+    margin: 5px 0; color: var(--text-primary);
+    font-weight: 500;
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--border-strong);
+  }
+  .map-wrap { position: relative; }
+
+  /* Tipografía — títulos en secciones */
+  .section-title {
+    font-size: 13px; font-weight: 700;
+    color: var(--allaria-navy);
+    text-transform: uppercase; letter-spacing: 1.2px;
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="header-row">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100" height="100" fill="#003366"/>
+          <g stroke="#ffffff" stroke-width="5" stroke-linecap="square" fill="none">
+            <line x1="34" y1="40" x2="62" y2="22"/>
+            <line x1="38" y1="52" x2="72" y2="34"/>
+            <line x1="42" y1="64" x2="82" y2="44"/>
+            <line x1="46" y1="76" x2="86" y2="56"/>
+          </g>
+          <g stroke="#8B734B" stroke-width="5" stroke-linecap="square" fill="none">
+            <line x1="64" y1="24" x2="78" y2="16"/>
+            <line x1="70" y1="32" x2="84" y2="24"/>
+          </g>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1><strong>Allaria</strong> — Dashboard Federal de Eventos</h1>
+        <p>Ventana comercial mayo 2026 → mayo 2027 · Inteligencia para equipos federales · Ecosistema Allaria</p>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-item"><div class="n" id="kpi-total">0</div><div class="l">Eventos en agenda</div></div>
+      <div class="meta-item"><div class="n gold" id="kpi-high">0</div><div class="l">Fit alto</div></div>
+      <div class="meta-item"><div class="n" id="kpi-prov">0</div><div class="l">Provincias</div></div>
+      <div class="meta-item"><div class="n gold" id="kpi-next">—</div><div class="l">Próximo evento</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="filters">
+    <div class="filter">
+      <label>Sector</label>
+      <select id="f-sector">
+        <option value="">Todos</option>
+        <option value="agro">Agro</option>
+        <option value="mineria">Minería</option>
+        <option value="energia">Energía</option>
+        <option value="finanzas">Finanzas</option>
+        <option value="realestate">Real Estate</option>
+        <option value="turismo">Turismo / Hotelería</option>
+      </select>
+    </div>
+    <div class="filter">
+      <label>Mes</label>
+      <select id="f-month">
+        <option value="">Toda la ventana</option>
+        <option value="2026-05">Mayo 2026</option>
+        <option value="2026-06">Junio 2026</option>
+        <option value="2026-07">Julio 2026</option>
+        <option value="2026-08">Agosto 2026</option>
+        <option value="2026-09">Septiembre 2026</option>
+        <option value="2026-10">Octubre 2026</option>
+        <option value="2026-11">Noviembre 2026</option>
+        <option value="2026-12">Diciembre 2026</option>
+        <option value="2027-01">Enero 2027</option>
+        <option value="2027-02">Febrero 2027</option>
+        <option value="2027-03">Marzo 2027</option>
+        <option value="2027-04">Abril 2027</option>
+        <option value="2027-05">Mayo 2027</option>
+      </select>
+    </div>
+    <div class="filter">
+      <label>Provincia</label>
+      <select id="f-prov"><option value="">Todas</option></select>
+    </div>
+    <div class="filter">
+      <label>Unidad Allaria</label>
+      <select id="f-unit">
+        <option value="">Todas</option>
+        <option value="Alyc">Alyc</option>
+        <option value="SGR">SGR</option>
+        <option value="Banco">Banco</option>
+        <option value="Pata exterior">Pata Exterior</option>
+        <option value="Real Estate">Real Estate</option>
+        <option value="Agro">Agro</option>
+        <option value="Almarena">Almarena</option>
+      </select>
+    </div>
+    <div class="filter">
+      <label>Fit comercial</label>
+      <select id="f-fit">
+        <option value="">Todos</option>
+        <option value="alto">Alto</option>
+        <option value="medio">Medio</option>
+        <option value="bajo">Bajo</option>
+      </select>
+    </div>
+    <div class="filter">
+      <label>Buscar</label>
+      <input type="text" id="f-search" placeholder="Nombre, lugar…" />
+    </div>
+    <div class="filter">
+      <label>&nbsp;</label>
+      <button class="btn-reset" onclick="resetFilters()">Limpiar filtros</button>
+    </div>
+  </div>
+
+  <div class="grid-main">
+    <div class="panel map-wrap">
+      <div class="panel-header">
+        <h2>Mapa federal</h2>
+        <span class="hint" id="map-count">Mostrando todos los eventos</span>
+      </div>
+      <div id="map"></div>
+      <div class="legend">
+        <h4>Sectores</h4>
+        <div class="legend-item"><span class="legend-dot" style="background:#5d7a3a"></span> Agro</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#8B734B"></span> Minería</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#a8432f"></span> Energía</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#003366"></span> Finanzas</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#4a3c6b"></span> Real Estate</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#a8594b"></span> Turismo</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Agenda mayo 2026 → mayo 2027</h2>
+        <span class="hint" id="list-count"></span>
+      </div>
+      <div class="event-list" id="event-list"></div>
+    </div>
+  </div>
+
+  <div class="detail" id="detail">
+    <div class="detail-empty">
+      <div class="icon">◎</div>
+      Seleccioná un evento en la lista o en el mapa para ver la ficha comercial completa:<br/>
+      fit por unidad de negocio, competidores esperados, contactos clave y talk track.
+    </div>
+  </div>
+
+  <div class="matrix-section panel" style="margin-top: 22px;">
+    <div class="panel-header">
+      <h2>Matriz comparativa — Top eventos del año</h2>
+      <span class="hint">Ordenada por fit comercial</span>
+    </div>
+    <div style="max-height: 460px; overflow: auto;">
+      <table class="matrix" id="matrix"></table>
+    </div>
+  </div>
+
+</div>
+
+<footer class="site">
+  <strong>Allaria</strong> · Dashboard generado automáticamente · Ventana: mayo 2026 → mayo 2027 · Datos consolidados de fuentes públicas (abril 2026)<br/>
+  Versión iterable — sumar nuevos sectores y fechas confirmadas en próximas revisiones
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ========== DATASET ==========
+const SECTORS = {
+  agro:       { name: 'Agro',         color: '#5d7a3a' },
+  mineria:    { name: 'Minería',      color: '#8B734B' },
+  energia:    { name: 'Energía',      color: '#a8432f' },
+  finanzas:   { name: 'Finanzas',     color: '#003366' },
+  realestate: { name: 'Real Estate',  color: '#4a3c6b' },
+  turismo:    { name: 'Turismo',      color: '#a8594b' },
+};
+
+const EVENTS = [
+  {
+    id: 10,
+    nombre: 'Expo San Juan Minera 2026 (11ª ed.)',
+    sector: 'mineria',
+    fechaInicio: '2026-05-06', fechaFin: '2026-05-08',
+    ciudad: 'San Juan', provincia: 'San Juan',
+    lat: -31.5375, lng: -68.5364,
+    organizador: 'Panorama Minero + Gob. San Juan', web: 'https://www.exposanjuan.com.ar/',
+    descripcion: 'La exposición minera más federal de Argentina. San Juan en modo Josemaría / Los Azules / El Pachón. CEOs mineros, proveedores, inversores, gobiernos.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Junior miners con listados, ONs, fideicomisos de producción. Demanda estructuración sofisticada.' },
+      { u: 'Pata exterior', d: 'Mayoría de mineras son internacionales. Operatoria cross-border, hedging de moneda y commodity.' },
+      { u: 'SGR', d: 'Cadena de proveedores mineros (pymes locales sanjuaninas) — fit excelente.' },
+      { u: 'Banco', d: 'Cash management, payroll multi-jurisdicción.' }
+    ],
+    competidores: ['HSBC', 'Citibank', 'BNP Paribas', 'Santander CIB', 'Banco San Juan', 'Balanz'],
+    contactos: [
+      'Juan Gimenez — Sec. Minería San Juan',
+      'Orlando Martino — Panorama Minero',
+      'CEOs de Glencore El Pachón, Los Azules (McEwen), Josemaría (Lundin)'
+    ],
+    talkTrack: 'Para el operador minero: te arma la estructura financiera local (fideicomiso / ON) y el hedge de cobre/oro en un mismo mandato.',
+    costoEstimado: 'Stand USD 20-35K',
+    prioridad: 1
+  },
+  {
+    id: 11,
+    nombre: 'Jonagro 2026 — CRA',
+    sector: 'agro',
+    fechaInicio: '2026-05-12', fechaFin: '2026-05-12',
+    ciudad: 'CABA (Bolsa de Cereales)', provincia: 'CABA',
+    lat: -34.6058, lng: -58.3712,
+    organizador: 'Confederaciones Rurales Argentinas',
+    descripcion: 'Congreso anual de CRA. Productores medianos y grandes, líderes gremiales del campo.',
+    fit: 'medio',
+    unidades: [
+      { u: 'Agro', d: 'Networking con líderes gremiales federales.' },
+      { u: 'Alyc', d: 'Productores invirtiendo excedente.' }
+    ],
+    competidores: ['Balanz', 'Puente', 'Adcap'],
+    contactos: ['Carlos Castagnani — Presidente CRA'],
+    talkTrack: 'Entendemos al productor familiar grande: te damos el servicio de la Alyc con el trato de un banco local.',
+    costoEstimado: 'Auspicio USD 3-8K',
+    prioridad: 3
+  },
+  {
+    id: 12,
+    nombre: 'Todo Láctea 2026',
+    sector: 'agro',
+    fechaInicio: '2026-05-12', fechaFin: '2026-05-14',
+    ciudad: 'San Francisco', provincia: 'Córdoba',
+    lat: -31.4291, lng: -62.0835,
+    organizador: 'Gob. Santa Fe + Sociedad Rural San Francisco',
+    descripcion: 'Exposición láctea federal en corazón de la cuenca lechera. PYMEs tamberas e industriales.',
+    fit: 'medio',
+    unidades: [
+      { u: 'SGR', d: 'Pool de tamberos pymes con demanda fuerte de avales.' },
+      { u: 'Agro', d: 'Financiamiento productivo.' }
+    ],
+    competidores: ['Banco Credicoop', 'Aval Rural', 'Garantizar'],
+    contactos: ['APYMEL', 'Gob Santa Fe — Ministerio de Producción'],
+    talkTrack: 'Conocemos tu realidad: margen chico y ciclos largos. Nuestra SGR tiene productos diseñados para tambo.',
+    costoEstimado: 'Stand USD 2-4K',
+    prioridad: 3
+  },
+  {
+    id: 13,
+    nombre: 'A Todo Trigo 2026',
+    sector: 'agro',
+    fechaInicio: '2026-05-14', fechaFin: '2026-05-15',
+    ciudad: 'Mar del Plata', provincia: 'Buenos Aires',
+    lat: -38.0055, lng: -57.5426,
+    organizador: 'Argentrigo', web: 'https://atodotrigo.com.ar/',
+    descripcion: '60+ expertos sobre cadena del trigo. Productores grandes de zona núcleo y sur bonaerense. Foco: geopolítica y genética.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Agro', d: 'Prefinanciación de cosecha, warrants sobre trigo, fondeo.' },
+      { u: 'Alyc', d: 'Cobertura futuros de trigo en Matba-Rofex. Mercado muy activo.' },
+      { u: 'Pata exterior', d: 'Exportadores de trigo — operatoria COFCO, Viterra, Cargill.' }
+    ],
+    competidores: ['Banco Galicia Agro', 'Banco Provincia', 'Puente', 'Balanz', 'Banco Nación'],
+    contactos: ['David Hughes — Argentrigo', 'Equipo comercial de acopios del sur BA'],
+    talkTrack: 'Trigo se cubre mejor con mandatos combinados: comprás puts en Matba-Rofex mientras estructurás un warrant con nosotros.',
+    costoEstimado: 'Auspicio USD 5-10K',
+    prioridad: 1
+  },
+  {
+    id: 14,
+    nombre: 'AIFI-26 — AI in Finance',
+    sector: 'finanzas',
+    fechaInicio: '2026-05-21', fechaFin: '2026-05-21',
+    ciudad: 'CABA (Hilton)', provincia: 'CABA',
+    lat: -34.6009, lng: -58.3686,
+    organizador: 'Andrés Ospina / AI in Finance Latam',
+    descripcion: 'Conferencia sobre IA aplicada a finanzas. Público: bancos, fintechs, sociedades de bolsa, data leaders.',
+    fit: 'medio',
+    unidades: [
+      { u: 'Alyc', d: 'Diferenciación: mostrar capabilites tecnológicas de la mesa Allaria (APIs, modelos de riesgo, exec algorítmica).' },
+      { u: 'Banco', d: 'Innovación en scoring, antilavado automatizado.' }
+    ],
+    competidores: ['Cocos', 'IOL', 'Balanz', 'Banco Galicia'],
+    contactos: ['Andrés Ospina'],
+    talkTrack: 'Somos la Alyc más API-first del mercado. Integraciones sin fricción con cualquier stack tecnológico.',
+    costoEstimado: 'Sponsor USD 4-8K',
+    prioridad: 3
+  },
+  {
+    id: 15,
+    nombre: 'Arminera 2026',
+    sector: 'mineria',
+    fechaInicio: '2026-05-22', fechaFin: '2026-05-24',
+    ciudad: 'CABA (La Rural)', provincia: 'CABA',
+    lat: -34.5825, lng: -58.4212,
+    organizador: 'CAEM + Messe Frankfurt', web: 'https://arminera.ar.messefrankfurt.com/',
+    descripcion: 'La Exposición Internacional de Minería Argentina. Reúne a toda la cadena de valor: empresas líderes, proveedores, tecnología, sector público.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Punto de encuentro de CFOs mineros + proveedores. Excelente para originación de ONs y fideicomisos.' },
+      { u: 'SGR', d: 'Proveedores PYME de la minería (metalmecánica, logística, servicios). Mercado grande y creciente.' },
+      { u: 'Pata exterior', d: 'Proyectos con estructura internacional.' },
+      { u: 'Banco', d: 'Payroll, transaccional, cartas de crédito.' }
+    ],
+    competidores: ['HSBC', 'Santander CIB', 'Citi', 'Banco Nación', 'Galicia CIB', 'Balanz'],
+    contactos: [
+      'Roberto Cacciola — Presidente CAEM',
+      'Direct Reps de Glencore, BHP, Lundin, McEwen, Ganfeng'
+    ],
+    talkTrack: 'Si sos CFO de minera: nuestro mandato único junta ON en pesos + hedge de moneda + pata exterior. Menos vendors, mismo servicio.',
+    costoEstimado: 'Stand USD 25-45K',
+    prioridad: 1
+  },
+  {
+    id: 16,
+    nombre: 'Nacionales 2026 — Sociedad Rural Corrientes',
+    sector: 'agro',
+    fechaInicio: '2026-05-24', fechaFin: '2026-05-29',
+    ciudad: 'Riachuelo', provincia: 'Corrientes',
+    lat: -27.5721, lng: -58.7476,
+    organizador: 'Sociedad Rural de Corrientes',
+    descripcion: 'Exposición ganadera nacional. Fuerte en razas índicas (Brahman, Braford). Remates, capacitaciones. Mercados: NEA + exportación en pie.',
+    fit: 'medio',
+    unidades: [
+      { u: 'Agro', d: 'Financiamiento de rodeos, prendarios ganaderos.' },
+      { u: 'SGR', d: 'Productores pymes ganaderos con baja calificación bancaria.' },
+      { u: 'Pata exterior', d: 'Exportación ganado en pie a mercados árabes + Turquía.' }
+    ],
+    competidores: ['Banco Patagonia', 'Banco Macro', 'Garantizar SGR'],
+    contactos: ['SR Corrientes — Presidencia', 'IPCVA'],
+    talkTrack: 'Somos la única mesa que estructura mandatos de hedge para exportaciones de ganado en pie a medida.',
+    costoEstimado: 'Stand USD 3-6K',
+    prioridad: 3
+  },
+  {
+    id: 17,
+    nombre: 'Congreso MAIZAR 2026 (20ª ed.)',
+    sector: 'agro',
+    fechaInicio: '2026-05-27', fechaFin: '2026-05-27',
+    ciudad: 'CABA (Goldencenter)', provincia: 'CABA',
+    lat: -34.5383, lng: -58.4570,
+    organizador: 'Maizar', web: 'https://www.congresomaizar.org.ar/',
+    descripcion: 'Congreso top de la cadena maíz. 20ª edición presidida por Ramiro Costa (BCBA). Lema: "Del potencial a los resultados". Público: industria + productores + política agroindustrial.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Todo el ecosistema maicero, con fuerte interés en coberturas CBoT/Matba-Rofex.' },
+      { u: 'Agro', d: 'Bioetanol, semillas, maíz comercial — mucho capital de trabajo.' },
+      { u: 'Pata exterior', d: 'Industria del bioetanol y exportación de maíz.' }
+    ],
+    competidores: ['Balanz', 'Puente', 'Galicia Agro', 'Banco Nación Agro'],
+    contactos: ['Ramiro Costa — BCBA (presidente)', 'Alberto Morelli — Maizar', 'Bioetanoleras (ACABIO, Bio4, Promaiz)'],
+    talkTrack: 'Para bioetanoleras: estructuramos ON verdes + hedge de precios combinado. Una sola mesa, mucho menos spread.',
+    costoEstimado: 'Auspicio USD 8-15K',
+    prioridad: 1
+  },
+  {
+    id: 18,
+    nombre: 'AgroActiva 2026',
+    sector: 'agro',
+    fechaInicio: '2026-06-03', fechaFin: '2026-06-06',
+    ciudad: 'Armstrong', provincia: 'Santa Fe',
+    lat: -32.7844, lng: -61.6092,
+    organizador: 'AgroActiva', web: 'https://agroactiva.com/',
+    descripcion: 'La muestra a cielo abierto más grande de Latam. Zona núcleo — tecnología, maquinaria, insumos, bancos, gobiernos. Edición récord prevista.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Agro', d: 'Financiamiento directo a productor. Volumen alto.' },
+      { u: 'SGR', d: 'Contratistas rurales y pymes agrotec.' },
+      { u: 'Alyc', d: 'Oferta de inversiones al productor con excedente.' },
+      { u: 'Banco', d: 'Transaccional agro.' }
+    ],
+    competidores: ['Banco Galicia Agro', 'Banco Macro', 'Banco Provincia', 'Credicoop', 'Puente', 'Balanz', 'Aval Rural', 'Garantizar'],
+    contactos: ['Rosana Nardi — AgroActiva', 'Gob. Santa Fe — Min. Producción'],
+    talkTrack: 'Productor de zona núcleo: te acompañamos en toda la campaña — desde el financiamiento hasta el hedge y la colocación del excedente.',
+    costoEstimado: 'Stand USD 15-30K',
+    prioridad: 1
+  },
+  {
+    id: 19,
+    nombre: 'Fintech Meetups — Neuquén',
+    sector: 'finanzas',
+    fechaInicio: '2026-06-18', fechaFin: '2026-06-18',
+    ciudad: 'Neuquén', provincia: 'Neuquén',
+    lat: -38.9516, lng: -68.0591,
+    organizador: 'Cámara Argentina Fintech',
+    descripcion: 'Tercera parada del ciclo federal. Foco Patagonia: ecosistema energético, fintechs regionales.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Empresas satélite a Vaca Muerta: alto cash generation, necesidad de tesorería profesional.' },
+      { u: 'Banco', d: 'Banca transaccional patagónica.' }
+    ],
+    competidores: ['Banco Patagonia', 'Balanz', 'Puente'],
+    contactos: ['Polo Tecnológico Neuquén'],
+    talkTrack: 'En Patagonia seguimos el dinero: Vaca Muerta genera flujos que necesitan gestión profesional.',
+    costoEstimado: 'Sponsor USD 2-4K',
+    prioridad: 2
+  },
+  {
+    id: 20,
+    nombre: 'ICDEFFI — Decentralized Finance',
+    sector: 'finanzas',
+    fechaInicio: '2026-07-09', fechaFin: '2026-07-09',
+    ciudad: 'CABA', provincia: 'CABA',
+    lat: -34.6037, lng: -58.3816,
+    organizador: 'Allconferencealert',
+    descripcion: 'Conferencia internacional sobre DeFi y fintech. Más académico, pero atrae fondos cripto y startups.',
+    fit: 'bajo',
+    unidades: [
+      { u: 'Alyc', d: 'Potencial para productos tokenizados a futuro.' }
+    ],
+    competidores: ['Ripio', 'Lemon', 'Bitso'],
+    contactos: ['Cámara Fintech DeFi'],
+    talkTrack: 'Mercado aún regulatoriamente gris en AR, pero seguimos el espacio activamente para tokenización.',
+    costoEstimado: 'Asistencia — no sponsor',
+    prioridad: 4
+  },
+  {
+    id: 21,
+    nombre: 'Exposición Rural de Palermo 2026 (138ª)',
+    sector: 'agro',
+    fechaInicio: '2026-07-16', fechaFin: '2026-07-26',
+    ciudad: 'CABA (Palermo)', provincia: 'CABA',
+    lat: -34.5826, lng: -58.4125,
+    organizador: 'Sociedad Rural Argentina', web: 'https://www.exposicionrural.com.ar/',
+    descripcion: 'La Expo Rural. El evento con más tradición del campo argentino. Público mixto: ganaderos elite, cabañeros, industria, gobierno. 10+ días.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Agro', d: 'Prendarios, pases ganaderos, financiamiento a cabañeros y frigoríficos.' },
+      { u: 'Alyc', d: 'HNW rurales, carteras administradas, estructuras patrimoniales.' },
+      { u: 'Real Estate', d: 'Campos y estancias — oportunidades de ART y forestales.' },
+      { u: 'SGR', d: 'PYME agropecuaria y agroindustrial.' },
+      { u: 'Banco', d: 'Cross-selling full.' }
+    ],
+    competidores: ['Banco Galicia Private+Agro', 'Banco Nación', 'Santander Private', 'BBVA Agro', 'Puente', 'Balanz', 'Criteria'],
+    contactos: [
+      'Nicolás Pino — Presidente SRA',
+      'Guillermo Villagra — Gerente Expo SRA',
+      'CEOs de frigoríficos (JBS, Swift, Marfrig)'
+    ],
+    talkTrack: 'Somos el ecosistema del campo argentino: financiamiento productivo con SGR + Agro, patrimonio con Alyc, estructura con Real Estate. Todo en un mandato.',
+    costoEstimado: 'Stand USD 40-80K (stand destacado)',
+    prioridad: 1
+  },
+  {
+    id: 22,
+    nombre: 'Argentina Cobre 2026',
+    sector: 'mineria',
+    fechaInicio: '2026-08-04', fechaFin: '2026-08-05',
+    ciudad: 'San Juan', provincia: 'San Juan',
+    lat: -31.5375, lng: -68.5364,
+    organizador: 'Panorama Minero', web: 'https://www.argentinacobre.com.ar/',
+    descripcion: 'El evento de cobre del país. Mesa del Cobre (gobernadores San Juan, Mendoza, Salta, Jujuy, Catamarca). CEOs de proyectos top: Josemaría, Los Azules, El Pachón, MARA, Agua Rica.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'CAPEX gigante en los próximos 5 años. Oportunidad de estructuración local para empresas que entran al RIGI.' },
+      { u: 'Pata exterior', d: 'Hedge cobre en LME + estructura cross-border.' },
+      { u: 'SGR', d: 'Proveedores de la industria cobrera.' },
+      { u: 'Banco', d: 'Banca corporativa.' }
+    ],
+    competidores: ['HSBC', 'BNP Paribas', 'Citi', 'JP Morgan', 'Santander CIB'],
+    contactos: [
+      'Orlando Martino — Panorama Minero',
+      'Marcelo Orrego — Gobernador San Juan',
+      'CEOs de Glencore, Lundin, McEwen, BHP, Pan American, First Quantum'
+    ],
+    talkTrack: 'Para megaproyectos cobre: somos los únicos que combinan ON en pesos con hedge cobre LME y acompañamos el uplift del RIGI.',
+    costoEstimado: 'Sponsor USD 10-20K',
+    prioridad: 1
+  },
+  {
+    id: 23,
+    nombre: 'Congreso Aapresid 2026 (34ª ed.)',
+    sector: 'agro',
+    fechaInicio: '2026-08-04', fechaFin: '2026-08-06',
+    ciudad: 'Rosario (Salón Metropolitano)', provincia: 'Santa Fe',
+    lat: -32.9468, lng: -60.6393,
+    organizador: 'Aapresid', web: 'https://congreso.aapresid.org.ar/',
+    descripcion: 'Congreso innovación agrícola. Lema: "Nuestro suelo, nuestra voz". Público elite agro — early adopters, AgTech, productores top.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Agro', d: 'Productores vanguardistas con apetito por productos financieros sofisticados.' },
+      { u: 'Alyc', d: 'Carteras administradas, estrategias multi-activo.' },
+      { u: 'Almarena', d: 'Si aplica — AgTech y plataformas de pago agro.' }
+    ],
+    competidores: ['Puente', 'Balanz', 'Adcap', 'Galicia Agro', 'Agrofy'],
+    contactos: ['Marcelo Torres — Presidente Aapresid', 'Federico Pognante'],
+    talkTrack: 'Productor Aapresid piensa en largo plazo. Nosotros también: cartera estructurada + cobertura de precios + planeamiento sucesorio.',
+    costoEstimado: 'Auspicio USD 12-20K',
+    prioridad: 1
+  },
+  {
+    id: 24,
+    nombre: 'Expo Real Estate Argentina 2026 (12°)',
+    sector: 'realestate',
+    fechaInicio: '2026-08-12', fechaFin: '2026-08-13',
+    ciudad: 'CABA (Hilton)', provincia: 'CABA',
+    lat: -34.6009, lng: -58.3686,
+    organizador: 'SG Real Estate', web: 'https://exporealestate.com.ar/',
+    descripcion: '12° Congreso desarrollos e inversiones inmobiliarias. 150+ stands, 300 opciones de inversión, 90+ speakers. Considerado el top de LatAm.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Real Estate', d: 'Core: desarrolladores, fideicomisos al costo, inversores institucionales. Fit natural.' },
+      { u: 'Alyc', d: 'Estructuración de fideicomisos financieros inmobiliarios, ONs de desarrollo.' },
+      { u: 'Pata exterior', d: 'Inversores latam (Uruguay, Chile, Paraguay, México).' },
+      { u: 'SGR', d: 'Constructoras pymes.' }
+    ],
+    competidores: ['TPCG', 'Banco Ciudad', 'Galicia', 'Supervielle', 'Puente'],
+    contactos: [
+      'Gabriel Brodsky — SG Real Estate',
+      'Damián Tabakman — CEDU',
+      'Developers: Vitrium, CRIBA, Consultatio, TGLT'
+    ],
+    talkTrack: 'Allaria Real Estate es el único que te estructura el fideicomiso al costo, el financiamiento puente y la colocación posterior con inversores propios.',
+    costoEstimado: 'Stand USD 10-20K',
+    prioridad: 1
+  },
+  {
+    id: 25,
+    nombre: 'Fintech Meetups — Salta',
+    sector: 'finanzas',
+    fechaInicio: '2026-08-20', fechaFin: '2026-08-20',
+    ciudad: 'Salta', provincia: 'Salta',
+    lat: -24.7821, lng: -65.4232,
+    organizador: 'Cámara Argentina Fintech',
+    descripcion: 'Cuarta parada del ciclo federal. Ecosistema NOA — minería + turismo + pymes.',
+    fit: 'medio',
+    unidades: [
+      { u: 'SGR', d: 'Proveedores mineros salteños (litio Pozuelos, minería metalífera).' },
+      { u: 'Banco', d: 'Bancarización ecosistema litio.' }
+    ],
+    competidores: ['Banco Macro', 'Banco Nación'],
+    contactos: ['Polo IT Salta'],
+    talkTrack: 'El NOA se institucionaliza al ritmo del litio. Acompañamos esa transición desde la Alyc.',
+    costoEstimado: 'Sponsor USD 2-3K',
+    prioridad: 3
+  },
+  {
+    id: 26,
+    nombre: 'Fintech Meetups — Córdoba',
+    sector: 'finanzas',
+    fechaInicio: '2026-09-17', fechaFin: '2026-09-17',
+    ciudad: 'Córdoba', provincia: 'Córdoba',
+    lat: -31.4201, lng: -64.1888,
+    organizador: 'Cámara Argentina Fintech',
+    descripcion: 'Quinta parada federal. Polo fintech cordobés — Naranja X, Tarjeta Naranja, Globant, Mercado Libre.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Tesorerías fintech top — NaranjaX, Galicia. Fit institucional.' },
+      { u: 'Almarena', d: 'Integraciones medios de pago.' }
+    ],
+    competidores: ['Banco Galicia', 'Cocos', 'Banco Córdoba', 'Naranja X (competidor + potencial cliente)'],
+    contactos: ['Marcos Galperin red', 'Francisco Jazmín — Naranja X', 'Polo IT Córdoba'],
+    talkTrack: 'Córdoba es unicorn country. Nuestras mesas están listas para los volúmenes de cualquier tesorería fintech argentina.',
+    costoEstimado: 'Sponsor USD 3-5K',
+    prioridad: 2
+  },
+  {
+    id: 27,
+    nombre: 'FIT América Latina 2026',
+    sector: 'turismo',
+    fechaInicio: '2026-09-26', fechaFin: '2026-09-29',
+    ciudad: 'CABA (La Rural)', provincia: 'CABA',
+    lat: -34.5825, lng: -58.4212,
+    organizador: 'FIT América Latina', web: 'https://fit.org.ar/',
+    descripcion: 'Feria Internacional de Turismo — top 5 mundial del sector. Cadenas hoteleras, operadores, líneas aéreas, destinos provinciales.',
+    fit: 'medio',
+    unidades: [
+      { u: 'Real Estate', d: 'Hotelería + desarrollos turísticos (costa, Patagonia, NOA).' },
+      { u: 'Banco', d: 'Medios de pago turismo, cuentas cross-border.' },
+      { u: 'Pata exterior', d: 'Operadores con ingresos en USD.' }
+    ],
+    competidores: ['Banco Galicia', 'Banco Nación', 'Prisma Medios de Pago'],
+    contactos: ['Mario Zaninovich — FIT', 'CAT (Cámara Argentina de Turismo)'],
+    talkTrack: 'El turismo genera flujos en USD: te ayudamos a cubrirte, estructurar inversiones hoteleras y repatriar excedentes.',
+    costoEstimado: 'Stand USD 8-15K',
+    prioridad: 2
+  },
+  {
+    id: 28,
+    nombre: 'Litio en Sudamérica 2026 (15ª ed.)',
+    sector: 'mineria',
+    fechaInicio: '2026-10-06', fechaFin: '2026-10-08',
+    ciudad: 'Jujuy', provincia: 'Jujuy',
+    lat: -24.1858, lng: -65.2995,
+    organizador: 'Panorama Minero', web: 'https://www.litioensudamerica.com.ar/',
+    descripcion: 'Seminario internacional de litio. Rota entre Salta/Jujuy/Catamarca. Proyectos: Ganfeng, Livent (Allkem), POSCO, Eramine, Lithium Americas.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Mineras listadas en TSX/NYSE con listados secundarios en BYMA potenciales.' },
+      { u: 'Pata exterior', d: 'Estructuras con matrices en Canadá, Korea, Australia. Operatoria cross-border intensa.' },
+      { u: 'SGR', d: 'Proveedores pymes del triángulo del litio.' }
+    ],
+    competidores: ['HSBC', 'Citi', 'BNP Paribas', 'Standard Chartered'],
+    contactos: ['Orlando Martino — Panorama Minero', 'CEOs de Livent/Arcadium, Ganfeng, Lithium Americas'],
+    talkTrack: 'Litio es mercado global con necesidad local. Nosotros hacemos la bisagra: operatoria AR + coordinación internacional.',
+    costoEstimado: 'Sponsor USD 8-15K',
+    prioridad: 1
+  },
+  {
+    id: 29,
+    nombre: 'AOG Patagonia 2026',
+    sector: 'energia',
+    fechaInicio: '2026-10-19', fechaFin: '2026-10-22',
+    ciudad: 'Neuquén (Espacio DUAM)', provincia: 'Neuquén',
+    lat: -38.9516, lng: -68.0591,
+    organizador: 'IAPG + Messe Frankfurt', web: 'https://www.aogpatagonia.com.ar/',
+    descripcion: 'Argentina Oil & Gas Expo — bienal. Por primera vez en Neuquén (antes La Rural). Congreso LatAm de Drilling + expo de O&G. TOP del año para upstream.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Todo el universo upstream + service companies = pipeline ON fortísimo.' },
+      { u: 'Pata exterior', d: 'Hedging WTI/Brent, operatoria cross-border.' },
+      { u: 'SGR', d: 'Proveedores neuquinos/rionegrinos. Volumen explosivo con VM.' },
+      { u: 'Banco', d: 'Banca corporativa VM.' }
+    ],
+    competidores: ['HSBC', 'Citi', 'Santander CIB', 'BBVA CIB', 'Banco Patagonia', 'Galicia CIB', 'Puente', 'Balanz'],
+    contactos: [
+      'Ernesto López Anadón — IAPG',
+      'CEOs YPF, PAE, Tecpetrol, Vista, Pluspetrol, TotalEnergies',
+      'Service companies: SLB, Halliburton, NRG, Tenaris'
+    ],
+    talkTrack: 'El mandato único Vaca Muerta: emisión ON + hedge + cobertura tipo de cambio + pata exterior. Cuatro problemas, una mesa.',
+    costoEstimado: 'Stand USD 30-60K',
+    prioridad: 1
+  },
+  {
+    id: 30,
+    nombre: 'IAEF 43° Congreso Anual (TBC)',
+    sector: 'finanzas',
+    fechaInicio: '2026-05-19', fechaFin: '2026-05-19',
+    ciudad: 'CABA', provincia: 'CABA',
+    lat: -34.6037, lng: -58.3816,
+    organizador: 'Instituto Argentino de Ejecutivos de Finanzas', web: 'https://iaef.org.ar/',
+    descripcion: 'Congreso top de CFOs y ejecutivos de finanzas. Asiste gobierno nacional y CEOs. *Fecha tentativa basada en recurrencia histórica (tercera semana de mayo).*',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'CFOs de empresas grandes — tomadores de decisión de mandatos de ON, M&A, tesorería.' },
+      { u: 'Banco', d: 'Servicios transaccionales corporativos.' },
+      { u: 'Pata exterior', d: 'CFOs evaluando estrategia cross-border.' }
+    ],
+    competidores: ['HSBC', 'Citi', 'Santander', 'BBVA', 'Galicia', 'Puente', 'Balanz', 'Adcap', 'Max Capital'],
+    contactos: ['Roberto Silva — Presidente IAEF', 'Staff IAEF: info@iaef.org.ar'],
+    talkTrack: 'El ecosistema Allaria es el one-stop-shop para el CFO argentino: mercado local + pata internacional + garantías.',
+    costoEstimado: 'Auspicio USD 15-30K',
+    prioridad: 1
+  },
+  /* ================= EVENTOS 2027 Q1 – MAYO =================
+     Fechas tentativas basadas en la recurrencia histórica de cada evento.
+     Marcar como TBC hasta que cada organizador publique fecha oficial. */
+  {
+    id: 31,
+    nombre: 'Future Energy Summit Argentina 2027 (TBC)',
+    sector: 'energia',
+    fechaInicio: '2027-03-03', fechaFin: '2027-03-04',
+    ciudad: 'CABA', provincia: 'CABA',
+    lat: -34.5956, lng: -58.3833,
+    organizador: 'FES Latam', web: 'https://futureenergysummit.com/',
+    descripcion: '4ª edición (tentativa). C-Level energía + inversores + utilities + financiadores. Fecha recurrente: primera semana de marzo.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Estructuración de ONs verdes/SVS para proyectos renovables. Demanda creciente post-RIGI.' },
+      { u: 'Banco', d: 'Project finance, cartas de crédito para importación de equipos.' },
+      { u: 'Pata exterior', d: 'CAPEX en USD, fondeo internacional, hedging moneda.' }
+    ],
+    competidores: ['HSBC', 'Santander CIB', 'BBVA', 'Galicia CIB', 'Banco Ciudad (Bonos Verdes)'],
+    contactos: ['CADER', 'Equipos financieros Genneia, YPF Luz, 360Energy, PCR'],
+    talkTrack: 'Colocadores activos del segmento SVS con estructuración ON a medida y hedge integrado.',
+    costoEstimado: 'Auspicio USD 10-25K',
+    prioridad: 1
+  },
+  {
+    id: 32,
+    nombre: 'Expoagro 2027 (TBC)',
+    sector: 'agro',
+    fechaInicio: '2027-03-09', fechaFin: '2027-03-12',
+    ciudad: 'San Nicolás', provincia: 'Buenos Aires',
+    lat: -33.3366, lng: -60.2156,
+    organizador: 'Exponenciar / La Nación / Clarín', web: 'https://www.expoagro.com.ar/',
+    visitantesEsperados: '160.000+',
+    descripcion: 'La muestra agroindustrial más grande del cono sur. Fecha recurrente: segunda semana de marzo. Stand conjunto Agro + Alyc + SGR recomendado.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Agro', d: 'Rondas de negocios, prefinanciación cosecha, warrants.' },
+      { u: 'Alyc', d: 'Productor high-ticket invirtiendo excedente; futuros Matba-Rofex, cauciones.' },
+      { u: 'SGR', d: 'Avales para maquinaria y capital de trabajo pyme agro.' },
+      { u: 'Banco', d: 'Colocación transaccional agro, tarjetas, líneas de crédito.' }
+    ],
+    competidores: ['Banco Galicia Agro', 'Banco Nación', 'BBVA Agro', 'Santander Agro', 'Macro', 'Puente', 'Balanz', 'Adcap', 'Aval Rural', 'Don Mario SGR'],
+    contactos: ['Liliana Rañil — Dir. Comercial Expoagro', 'Red comercial Agro Allaria', 'Bolsa de Cereales BA'],
+    talkTrack: 'Ecosistema único: del aval SGR para la sembradora a la colocación del excedente en futuros. Un solo interlocutor.',
+    costoEstimado: 'Stand USD 25-40K',
+    prioridad: 1
+  },
+  {
+    id: 33,
+    nombre: 'Vaca Muerta Insights 2027 (TBC)',
+    sector: 'energia',
+    fechaInicio: '2027-03-23', fechaFin: '2027-03-23',
+    ciudad: 'Neuquén', provincia: 'Neuquén',
+    lat: -38.9516, lng: -68.0591,
+    organizador: 'LM Neuquén + Más Energía + Econojournal', web: 'https://mase.lmneuquen.com/',
+    descripcion: 'Gathering anual de CEOs de upstream (YPF, Tecpetrol, Vista, PAE, TotalEnergies). Tickets agotados históricamente. Fecha recurrente: última semana de marzo.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Pipeline de mandatos ON upstream + service companies. Fit 10/10.' },
+      { u: 'Pata exterior', d: 'Hedging de curvas de precio, estructuras en USD.' },
+      { u: 'SGR', d: 'Proveedores pymes neuquinos/rionegrinos — necesidades de aval enormes.' },
+      { u: 'Banco', d: 'Banca transaccional y líneas puente.' }
+    ],
+    competidores: ['Puente', 'Balanz', 'Adcap', 'HSBC', 'Citi', 'Banco Patagonia', 'Galicia CIB'],
+    contactos: ['Horacio Marín (YPF)', 'Pablo Vera Pinto (Tecpetrol)', 'Miguel Galuccio (Vista)'],
+    talkTrack: 'ON corta para capital de trabajo en semanas + hedge Matba-Rofex integrado.',
+    costoEstimado: 'Sponsor USD 8-15K',
+    prioridad: 1
+  },
+  {
+    id: 34,
+    nombre: 'Fintech Meetups — Buenos Aires 2027 (TBC)',
+    sector: 'finanzas',
+    fechaInicio: '2027-03-18', fechaFin: '2027-03-18',
+    ciudad: 'CABA', provincia: 'CABA',
+    lat: -34.5853, lng: -58.3921,
+    organizador: 'Cámara Argentina Fintech', web: 'https://camarafintech.com.ar/',
+    descripcion: 'Kickoff ciclo federal 2027. Panel con CEOs del ecosistema, regulación, apertura del año. Alto networking.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Fintechs con tesorerías grandes = cuenta institucional Allaria.' },
+      { u: 'Banco', d: 'Convenios, rampas ingreso/egreso, cuentas corrientes fintech.' },
+      { u: 'Almarena', d: 'Integraciones cash management B2B.' }
+    ],
+    competidores: ['Mercado Pago', 'Ualá', 'Naranja X', 'Personal Pay', 'Cocos', 'Galicia'],
+    contactos: ['Mario López — Presidente Cámara Fintech', 'Mariano Biocca — Dir. Ejecutivo'],
+    talkTrack: 'Alyc API-first con SGR para fondeo de capital de trabajo fintech.',
+    costoEstimado: 'Sponsor USD 3-8K',
+    prioridad: 1
+  },
+  {
+    id: 35,
+    nombre: 'Nuestros Caballos 2027 (TBC)',
+    sector: 'agro',
+    fechaInicio: '2027-03-23', fechaFin: '2027-03-28',
+    ciudad: 'CABA (Palermo)', provincia: 'CABA',
+    lat: -34.5826, lng: -58.4125,
+    organizador: 'Sociedad Rural Argentina + AACCC', web: 'https://www.nuestroscaballos.com.ar/',
+    descripcion: '24ª edición. Freno de Oro, finales de rodeo. Público: cabañeros y productores HNW.',
+    fit: 'medio',
+    unidades: [
+      { u: 'Alyc', d: 'Cabañero = cliente high net worth. Carteras administradas, colocación excedentes.' },
+      { u: 'Real Estate', d: 'Estancias y campos con potencial ART / desarrollos.' }
+    ],
+    competidores: ['Puente', 'Balanz', 'Criteria', 'Galicia Private'],
+    contactos: ['Nicolás Pino — SRA', 'Asoc. Criadores Caballos Criollos'],
+    talkTrack: 'Cartera con tus excedentes + cobertura de moneda para tus exportaciones de genética.',
+    costoEstimado: 'Stand USD 5-12K',
+    prioridad: 2
+  },
+  {
+    id: 36,
+    nombre: 'Coloquio Mercoláctea 2027 (TBC)',
+    sector: 'agro',
+    fechaInicio: '2027-04-15', fechaFin: '2027-04-16',
+    ciudad: 'Tandil', provincia: 'Buenos Aires',
+    lat: -37.3281, lng: -59.1332,
+    organizador: 'Mercoláctea', web: 'https://mercolactea.com/',
+    descripcion: 'Encuentro de la cadena láctea. Fecha recurrente: mitad de abril.',
+    fit: 'medio',
+    unidades: [
+      { u: 'SGR', d: 'Tamberos pymes con necesidad de capital de trabajo y modernización de ordeño.' },
+      { u: 'Agro', d: 'Financiamiento estacional.' }
+    ],
+    competidores: ['Banco Provincia', 'Galicia Agro', 'Credicoop', 'Aval Rural'],
+    contactos: ['APYMEL', 'Williner', 'La Serenísima', 'Cooperativa Lácteos Tandil'],
+    talkTrack: 'Avalamos inversión en robots de ordeño + gestión de volatilidad del precio del litro.',
+    costoEstimado: 'Stand USD 3-6K',
+    prioridad: 3
+  },
+  {
+    id: 37,
+    nombre: 'Fintech Meetups — Rosario 2027 (TBC)',
+    sector: 'finanzas',
+    fechaInicio: '2027-04-14', fechaFin: '2027-04-14',
+    ciudad: 'Rosario', provincia: 'Santa Fe',
+    lat: -32.9468, lng: -60.6393,
+    organizador: 'Cámara Argentina Fintech',
+    descripcion: 'Segunda parada circuito federal 2027. Foco agrofintech, insurtech, medios de pago.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Agrofintechs rosarinas (Agrofy, Agrotoken, Puna Bio) — cuenta institucional.' },
+      { u: 'Almarena', d: 'Integraciones B2B con fintechs pymes.' }
+    ],
+    competidores: ['Banco Santa Fe', 'Galicia', 'Cocos', 'IOL'],
+    contactos: ['Polo Tecnológico Rosario', 'Agrofy — CFO'],
+    talkTrack: 'La Alyc que mejor entiende la interfaz agro ↔ mercado de capitales.',
+    costoEstimado: 'Sponsor USD 2-4K',
+    prioridad: 2
+  },
+  {
+    id: 38,
+    nombre: 'Expo San Juan Minera 2027 (12ª ed. TBC)',
+    sector: 'mineria',
+    fechaInicio: '2027-05-05', fechaFin: '2027-05-07',
+    ciudad: 'San Juan', provincia: 'San Juan',
+    lat: -31.5375, lng: -68.5364,
+    organizador: 'Panorama Minero + Gob. San Juan', web: 'https://www.exposanjuan.com.ar/',
+    descripcion: 'Exposición minera federal. San Juan consolidando Josemaría / Los Azules / El Pachón. Fecha recurrente: primera semana de mayo.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Junior miners con listados, ONs, fideicomisos de producción.' },
+      { u: 'Pata exterior', d: 'Operatoria cross-border, hedging moneda y commodity.' },
+      { u: 'SGR', d: 'Proveedores sanjuaninos — fit excelente.' },
+      { u: 'Banco', d: 'Cash management, payroll multi-jurisdicción.' }
+    ],
+    competidores: ['HSBC', 'Citibank', 'BNP Paribas', 'Santander CIB', 'Banco San Juan', 'Balanz'],
+    contactos: ['Sec. Minería San Juan', 'Panorama Minero', 'CEOs de Glencore, McEwen, Lundin'],
+    talkTrack: 'Estructura financiera local (fideicomiso / ON) + hedge cobre/oro en un mandato único.',
+    costoEstimado: 'Stand USD 20-35K',
+    prioridad: 1
+  },
+  {
+    id: 39,
+    nombre: 'Jonagro 2027 — CRA (TBC)',
+    sector: 'agro',
+    fechaInicio: '2027-05-11', fechaFin: '2027-05-11',
+    ciudad: 'CABA (Bolsa de Cereales)', provincia: 'CABA',
+    lat: -34.6058, lng: -58.3712,
+    organizador: 'Confederaciones Rurales Argentinas',
+    descripcion: 'Congreso anual de CRA. Productores medianos y grandes + líderes gremiales federales.',
+    fit: 'medio',
+    unidades: [
+      { u: 'Agro', d: 'Networking con líderes gremiales federales.' },
+      { u: 'Alyc', d: 'Productores invirtiendo excedente.' }
+    ],
+    competidores: ['Balanz', 'Puente', 'Adcap'],
+    contactos: ['Presidencia CRA'],
+    talkTrack: 'Servicio Alyc con trato de banco local para el productor familiar grande.',
+    costoEstimado: 'Auspicio USD 3-8K',
+    prioridad: 3
+  },
+  {
+    id: 40,
+    nombre: 'A Todo Trigo 2027 (TBC)',
+    sector: 'agro',
+    fechaInicio: '2027-05-13', fechaFin: '2027-05-14',
+    ciudad: 'Mar del Plata', provincia: 'Buenos Aires',
+    lat: -38.0055, lng: -57.5426,
+    organizador: 'Argentrigo', web: 'https://atodotrigo.com.ar/',
+    descripcion: '60+ expertos cadena del trigo. Productores grandes de zona núcleo y sur bonaerense. Fecha recurrente: mitad de mayo.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Agro', d: 'Prefinanciación cosecha, warrants sobre trigo, fondeo.' },
+      { u: 'Alyc', d: 'Cobertura futuros trigo Matba-Rofex.' },
+      { u: 'Pata exterior', d: 'Exportadores trigo — operatoria COFCO, Viterra, Cargill.' }
+    ],
+    competidores: ['Galicia Agro', 'Banco Provincia', 'Puente', 'Balanz', 'Banco Nación'],
+    contactos: ['David Hughes — Argentrigo', 'Acopios sur BA'],
+    talkTrack: 'Mandatos combinados: puts en Matba-Rofex + warrant. Una sola mesa.',
+    costoEstimado: 'Auspicio USD 5-10K',
+    prioridad: 1
+  },
+  {
+    id: 41,
+    nombre: 'AIFI-27 — AI in Finance (TBC)',
+    sector: 'finanzas',
+    fechaInicio: '2027-05-20', fechaFin: '2027-05-20',
+    ciudad: 'CABA (Hilton)', provincia: 'CABA',
+    lat: -34.6009, lng: -58.3686,
+    organizador: 'AI in Finance Latam',
+    descripcion: 'Conferencia IA aplicada a finanzas. Bancos, fintechs, sociedades de bolsa, data leaders.',
+    fit: 'medio',
+    unidades: [
+      { u: 'Alyc', d: 'Mostrar capabilities tecnológicas mesa Allaria (APIs, modelos de riesgo).' },
+      { u: 'Banco', d: 'Innovación en scoring, antilavado automatizado.' }
+    ],
+    competidores: ['Cocos', 'IOL', 'Balanz', 'Galicia'],
+    contactos: ['Andrés Ospina'],
+    talkTrack: 'Alyc más API-first del mercado. Integraciones sin fricción con cualquier stack.',
+    costoEstimado: 'Sponsor USD 4-8K',
+    prioridad: 3
+  },
+  {
+    id: 42,
+    nombre: 'IAEF 44° Congreso Anual (TBC)',
+    sector: 'finanzas',
+    fechaInicio: '2027-05-18', fechaFin: '2027-05-18',
+    ciudad: 'CABA', provincia: 'CABA',
+    lat: -34.6037, lng: -58.3816,
+    organizador: 'Instituto Argentino de Ejecutivos de Finanzas', web: 'https://iaef.org.ar/',
+    descripcion: 'Congreso top CFOs y ejecutivos de finanzas. Gobierno nacional + CEOs. Fecha recurrente: tercera semana de mayo.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'CFOs empresas grandes — tomadores de decisión ON, M&A, tesorería.' },
+      { u: 'Banco', d: 'Servicios transaccionales corporativos.' },
+      { u: 'Pata exterior', d: 'CFOs evaluando estrategia cross-border.' }
+    ],
+    competidores: ['HSBC', 'Citi', 'Santander', 'BBVA', 'Galicia', 'Puente', 'Balanz', 'Adcap', 'Max Capital'],
+    contactos: ['Presidencia IAEF', 'Staff IAEF: info@iaef.org.ar'],
+    talkTrack: 'El ecosistema Allaria es el one-stop-shop para el CFO argentino.',
+    costoEstimado: 'Auspicio USD 15-30K',
+    prioridad: 1
+  },
+  {
+    id: 43,
+    nombre: 'Congreso MAIZAR 2027 (21ª ed. TBC)',
+    sector: 'agro',
+    fechaInicio: '2027-05-26', fechaFin: '2027-05-26',
+    ciudad: 'CABA (Goldencenter)', provincia: 'CABA',
+    lat: -34.5383, lng: -58.4570,
+    organizador: 'Maizar', web: 'https://www.congresomaizar.org.ar/',
+    descripcion: 'Congreso top cadena maíz. Industria + productores + política agroindustrial. Fecha recurrente: última semana de mayo.',
+    fit: 'alto',
+    unidades: [
+      { u: 'Alyc', d: 'Ecosistema maicero con fuerte interés en coberturas CBoT/Matba-Rofex.' },
+      { u: 'Agro', d: 'Bioetanol, semillas, maíz — mucho capital de trabajo.' },
+      { u: 'Pata exterior', d: 'Bioetanol y exportación de maíz.' }
+    ],
+    competidores: ['Balanz', 'Puente', 'Galicia Agro', 'Banco Nación Agro'],
+    contactos: ['Presidencia Maizar', 'Bioetanoleras (ACABIO, Bio4, Promaiz)'],
+    talkTrack: 'ON verdes para bioetanoleras + hedge de precios combinado.',
+    costoEstimado: 'Auspicio USD 8-15K',
+    prioridad: 1
+  }
+];
+
+// ========== RENDER ==========
+const map = L.map('map', { zoomControl: true, attributionControl: false }).setView([-38.4, -63.6], 4);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  subdomains: 'abcd', maxZoom: 19
+}).addTo(map);
+L.control.attribution({ position: 'bottomleft', prefix: false })
+  .addAttribution('© OpenStreetMap · CartoDB · Allaria').addTo(map);
+
+let markers = [];
+let selectedId = null;
+
+function fitBadge(fit) {
+  const m = { alto: ['fit-high', 'Fit alto'], medio: ['fit-med', 'Fit medio'], bajo: ['fit-low', 'Fit bajo'] };
+  const [cls, label] = m[fit] || m['bajo'];
+  return `<span class="fit-badge ${cls}">${label}</span>`;
+}
+function sectorTag(s) {
+  return `<span class="sector-tag sector-${s}">${SECTORS[s].name}</span>`;
+}
+function formatDate(start, end) {
+  const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const s = new Date(start + 'T00:00:00');
+  const e = new Date(end + 'T00:00:00');
+  const yr = s.getFullYear().toString().slice(-2); // '26' o '27'
+  if (start === end) return `${s.getDate()} ${months[s.getMonth()]} '${yr}`;
+  if (s.getMonth() === e.getMonth()) return `${s.getDate()}-${e.getDate()} ${months[s.getMonth()]} '${yr}`;
+  return `${s.getDate()} ${months[s.getMonth()]} - ${e.getDate()} ${months[e.getMonth()]} '${yr}`;
+}
+
+function applyFilters() {
+  const fs = document.getElementById('f-sector').value;
+  const fm = document.getElementById('f-month').value;
+  const fp = document.getElementById('f-prov').value;
+  const fu = document.getElementById('f-unit').value;
+  const ff = document.getElementById('f-fit').value;
+  const fq = document.getElementById('f-search').value.toLowerCase().trim();
+  return EVENTS.filter(ev => {
+    if (fs && ev.sector !== fs) return false;
+    if (fm) {
+      const ym = ev.fechaInicio.slice(0, 7); // "YYYY-MM"
+      if (ym !== fm) return false;
+    }
+    if (fp && ev.provincia !== fp) return false;
+    if (fu && !ev.unidades.some(u => u.u === fu)) return false;
+    if (ff && ev.fit !== ff) return false;
+    if (fq) {
+      const hay = (ev.nombre + ' ' + ev.ciudad + ' ' + ev.provincia + ' ' + ev.organizador).toLowerCase();
+      if (!hay.includes(fq)) return false;
+    }
+    return true;
+  });
+}
+
+function render() {
+  const filtered = applyFilters();
+
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  filtered.forEach(ev => {
+    const color = SECTORS[ev.sector].color;
+    const size = ev.fit === 'alto' ? 14 : ev.fit === 'medio' ? 11 : 8;
+    const marker = L.circleMarker([ev.lat, ev.lng], {
+      radius: size, fillColor: color, color: '#fff', weight: 2.5,
+      opacity: 1, fillOpacity: 0.88
+    });
+    marker.bindPopup(`<strong>${ev.nombre}</strong>${formatDate(ev.fechaInicio, ev.fechaFin)}<br/>${ev.ciudad}, ${ev.provincia}<br/><em style="color:#e8dfd0;">Fit: ${ev.fit}</em>`);
+    marker.on('click', () => selectEvent(ev.id));
+    marker.addTo(map);
+    markers.push(marker);
+  });
+
+  const list = document.getElementById('event-list');
+  list.innerHTML = filtered.length === 0
+    ? '<div style="padding:50px 20px; text-align:center; color:var(--text-secondary);">Sin eventos con estos filtros</div>'
+    : filtered.map(ev => `
+      <div class="event-card ${selectedId === ev.id ? 'active' : ''}" onclick="selectEvent(${ev.id})">
+        <div class="event-card-top">
+          <div class="event-card-name">${ev.nombre}</div>
+          <div class="event-card-date">${formatDate(ev.fechaInicio, ev.fechaFin)}</div>
+        </div>
+        <div class="event-card-meta">
+          ${sectorTag(ev.sector)}
+          <span class="dot"></span>
+          <span>${ev.ciudad}, ${ev.provincia}</span>
+          <span class="dot"></span>
+          ${fitBadge(ev.fit)}
+        </div>
+      </div>
+    `).join('');
+
+  document.getElementById('kpi-total').textContent = filtered.length;
+  document.getElementById('kpi-high').textContent = filtered.filter(e => e.fit === 'alto').length;
+  document.getElementById('kpi-prov').textContent = new Set(filtered.map(e => e.provincia)).size;
+  const today = new Date('2026-04-20');
+  const next = filtered
+    .map(e => ({ ev: e, d: new Date(e.fechaInicio + 'T00:00:00') }))
+    .filter(x => x.d >= today)
+    .sort((a,b) => a.d - b.d)[0];
+  document.getElementById('kpi-next').textContent = next ? formatDate(next.ev.fechaInicio, next.ev.fechaFin) : '—';
+  document.getElementById('list-count').textContent = `${filtered.length} eventos`;
+  document.getElementById('map-count').textContent = `${filtered.length} eventos en el mapa`;
+
+  renderMatrix(filtered);
+}
+
+function selectEvent(id) {
+  selectedId = id;
+  const ev = EVENTS.find(e => e.id === id);
+  if (!ev) return;
+  const d = document.getElementById('detail');
+  d.innerHTML = `
+    <div class="detail-head">
+      <div class="detail-title">${ev.nombre}</div>
+      <div class="detail-subtitle">
+        <span>${sectorTag(ev.sector)}</span>
+        <span>📅 ${formatDate(ev.fechaInicio, ev.fechaFin)}</span>
+        <span>📍 ${ev.ciudad}, ${ev.provincia}</span>
+        <span>${fitBadge(ev.fit)}</span>
+      </div>
+    </div>
+    <div class="detail-grid">
+      <div><div class="k">Organizador</div><div class="v">${ev.organizador}</div></div>
+      ${ev.web ? `<div><div class="k">Sitio oficial</div><div class="v"><a href="${ev.web}" target="_blank" rel="noopener">${ev.web.replace(/^https?:\/\//, '')}</a></div></div>` : ''}
+      ${ev.visitantesEsperados ? `<div><div class="k">Visitantes esperados</div><div class="v">${ev.visitantesEsperados}</div></div>` : ''}
+      ${ev.costoEstimado ? `<div><div class="k">Costo estimado</div><div class="v">${ev.costoEstimado}</div></div>` : ''}
+      <div><div class="k">Prioridad comercial</div><div class="v">P${ev.prioridad}</div></div>
+    </div>
+    <div class="section">
+      <h3>De qué se trata</h3>
+      <p>${ev.descripcion}</p>
+    </div>
+    <div class="section">
+      <h3>Fit por unidad de negocio Allaria</h3>
+      <div class="fit-list">
+        ${ev.unidades.map(u => `
+          <div class="fit-item">
+            <div class="fit-unit">${u.u}</div>
+            <div class="fit-desc">${u.d}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="section">
+      <h3>Competidores esperados</h3>
+      <div class="comp-grid">
+        ${ev.competidores.map(c => `<div class="comp-chip">${c}</div>`).join('')}
+      </div>
+    </div>
+    <div class="section">
+      <h3>Contactos y acciones sugeridas</h3>
+      <div class="contact-list">
+        ${ev.contactos.map(c => `<div class="contact-item">${c}</div>`).join('')}
+      </div>
+    </div>
+    <div class="section">
+      <h3>Talk track / posicionamiento</h3>
+      <div class="talk-track">${ev.talkTrack}</div>
+    </div>
+  `;
+  d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  render();
+}
+
+function renderMatrix(events) {
+  const sorted = [...events].sort((a,b) => {
+    const f = { alto: 0, medio: 1, bajo: 2 };
+    return f[a.fit] - f[b.fit] || new Date(a.fechaInicio) - new Date(b.fechaInicio);
+  });
+  const html = `
+    <thead>
+      <tr>
+        <th>Evento</th>
+        <th>Sector</th>
+        <th>Fecha</th>
+        <th>Lugar</th>
+        <th>Fit</th>
+        <th>Unidades Allaria clave</th>
+        <th>Top competidor</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${sorted.map(ev => `
+        <tr onclick="selectEvent(${ev.id})">
+          <td><strong>${ev.nombre}</strong></td>
+          <td>${sectorTag(ev.sector)}</td>
+          <td>${formatDate(ev.fechaInicio, ev.fechaFin)}</td>
+          <td>${ev.ciudad}</td>
+          <td>${fitBadge(ev.fit)}</td>
+          <td>${ev.unidades.map(u => u.u).join(', ')}</td>
+          <td>${ev.competidores[0] || '—'}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  `;
+  document.getElementById('matrix').innerHTML = html;
+}
+
+function resetFilters() {
+  ['f-sector','f-month','f-prov','f-unit','f-fit','f-search'].forEach(id => document.getElementById(id).value = '');
+  render();
+}
+
+const provinces = [...new Set(EVENTS.map(e => e.provincia))].sort();
+const fp = document.getElementById('f-prov');
+provinces.forEach(p => {
+  const o = document.createElement('option');
+  o.value = p; o.textContent = p;
+  fp.appendChild(o);
+});
+
+['f-sector','f-month','f-prov','f-unit','f-fit'].forEach(id => {
+  document.getElementById(id).addEventListener('change', render);
+});
+document.getElementById('f-search').addEventListener('input', render);
+
+render();
+</script>
+</body>
+</html>
